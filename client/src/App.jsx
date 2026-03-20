@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
+import UploadResumePage from './pages/UploadResumePage'
 
 const MockDashboard = () => (
   <div className="min-h-screen flex items-center justify-center bg-surface">
@@ -17,6 +18,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/dashboard" element={<MockDashboard />} />
+        <Route path="/upload" element={<UploadResumePage />} />
       </Routes>
     </Router>
   )

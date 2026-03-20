@@ -1,9 +1,10 @@
 import { ArrowLeft, Brain, User, Briefcase } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 
 export default function LoginPage() {
   const [selectedRole, setSelectedRole] = useState(null)
+  const navigate = useNavigate()
 
   return (
     <div className="min-h-screen relative flex items-center justify-center overflow-hidden bg-surface">
@@ -48,7 +49,12 @@ export default function LoginPage() {
               alert("Please select a role to continue");
               return;
             }
-            // Proceed with login logic
+            
+            if (selectedRole === 'employee') {
+              navigate('/upload');
+            } else if (selectedRole === 'hr') {
+              navigate('/dashboard');
+            }
           }}>
             
             {/* Role Selection */}
