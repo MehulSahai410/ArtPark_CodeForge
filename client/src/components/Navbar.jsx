@@ -55,12 +55,6 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-3">
           <Link
             to="/login"
-            className="px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink transition-colors duration-200"
-          >
-            Log in
-          </Link>
-          <Link
-            to="/register"
             className="btn-primary !px-6 !py-2.5 text-sm"
           >
             Get Started
@@ -91,10 +85,7 @@ export default function Navbar() {
               </a>
             ))}
             <hr className="my-2 border-gray-200/50" />
-            <Link to="/login" className="px-4 py-3 text-sm font-medium text-ink/70">
-              Log in
-            </Link>
-            <Link to="/register" className="btn-primary text-center mt-1">
+            <Link to="/login" className="btn-primary text-center mt-1">
               Get Started
             </Link>
           </div>

@@ -45,8 +45,8 @@ export default function HeroSection() {
 
         {/* CTA Buttons */}
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
-          <Link to="/register" className="btn-primary inline-flex items-center gap-2 text-base">
-            Start Free Trial
+          <Link to="/login" className="btn-primary inline-flex items-center gap-2 text-base">
+            Get Started
             <ArrowRight className="w-4 h-4" />
           </Link>
           <a href="#how-it-works" className="btn-secondary inline-flex items-center gap-2 text-base">
