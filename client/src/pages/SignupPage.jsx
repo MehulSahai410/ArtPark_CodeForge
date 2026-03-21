@@ -31,7 +31,7 @@ export default function SignupPage() {
           .insert([{ id: authData.user.id, email: email, role: 'hr' }]);
 
         if (profileError) {
-          throw new Error('Verification sent, but assigning HR role failed. Contact support.');
+          throw new Error('Verification sent, but profile creation failed: ' + profileError.message);
         } else {
           // Typically auth state listener in App.jsx catches this, but if email confirm is required
           // we should alert the user to check email.
