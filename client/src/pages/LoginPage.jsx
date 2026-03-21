@@ -1,7 +1,7 @@
 import { ArrowLeft, Brain, User, Briefcase, AlertCircle } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
-import { supabase } from '../supabaseClient'
+import { mockAuth } from '../mockAuth'
 
 export default function LoginPage() {
   const [selectedRole, setSelectedRole] = useState(null)
@@ -22,36 +22,18 @@ export default function LoginPage() {
     setErrorMsg('');
     setLoading(true);
 
-    try {
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+    // Simulate a brief delay
+    await new Promise(r => setTimeout(r, 500));
 
-      if (authError) throw new Error(authError.message);
-
-      // Verify Role
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', authData.user.id)
-        .single();
-
-      if (profileError) throw new Error("Could not fetch user profile to verify role.");
-
-      if (profile.role !== selectedRole) {
-        await supabase.auth.signOut();
-        throw new Error(`Access denied. You are registered as an ${profile.role}, not an ${selectedRole}.`);
-      }
-
-      // App.jsx routing will automatically pick up the session change and redirect.
-      // (No explicit navigate here needed since App.jsx's onAuthStateChange handles it)
-      
-    } catch (err) {
-      setErrorMsg(err.message);
-    } finally {
-      setLoading(false);
+    mockAuth.login(email, selectedRole);
+    
+    if (selectedRole === 'employee') {
+      navigate('/upload');
+    } else {
+      navigate('/hr-dashboard');
     }
+
+    setLoading(false);
   };
 
   return (

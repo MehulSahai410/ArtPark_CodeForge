@@ -3,64 +3,68 @@ import DashboardHeader from '../components/dashboard/DashboardHeader';
 import MetricCard from '../components/dashboard/MetricCard';
 import FeaturedModule from '../components/dashboard/FeaturedModule';
 import SkillGapCard from '../components/dashboard/SkillGapCard';
-import { supabase } from '../supabaseClient';
-import { useState } from 'react';
+import { mockAuth, getAnalysis } from '../mockAuth';
+import { useNavigate } from 'react-router-dom';
 
 export default function EmployeeDashboardPage() {
+  const navigate = useNavigate();
+  const user = mockAuth.getUser();
+  const analysis = getAnalysis();
+
+  // Build dynamic metrics from new Gemini AI analysis data if available
+  const skillReport = analysis?.skill_gap_report || {};
+  const skillEntries = Object.entries(skillReport);
+  
+  const matchedCount = analysis?.matched_skills?.length || 0;
+  const missingCount = analysis?.missing_skills?.length || 0;
+  const totalSkills = matchedCount + missingCount;
+  const readiness = totalSkills > 0 ? Math.round((matchedCount / totalSkills) * 100) : 78;
+  const totalModules = analysis?.modules?.length || 0;
+
   const metrics = [
-    { title: 'Readiness Score', value: '78%', change: '+5%', changeText: 'this week', trend: 'up' },
-    { title: 'Modules Completed', value: '12', change: '6', changeText: 'remaining', trend: 'neutral' },
-    { title: 'Time to Close Gaps', value: '3 weeks', change: '-1 week', changeText: 'faster', trend: 'up' },
-    { title: 'Blocking Gaps', value: '2', change: 'Critical', changeText: '', trend: 'down' },
+    { title: 'Readiness Score', value: `${readiness}%`, change: '+5%', changeText: 'this week', trend: 'up' },
+    { title: 'Modules Generated', value: `${totalModules}`, change: `${missingCount}`, changeText: 'gaps found', trend: missingCount > 2 ? 'down' : 'neutral' },
+    { title: 'Skills Matched', value: `${matchedCount}`, change: 'AI', changeText: 'analyzed', trend: 'up' },
+    { title: 'Blocking Gaps', value: `${missingCount}`, change: missingCount > 2 ? 'Critical' : 'Low', changeText: '', trend: missingCount > 2 ? 'down' : 'up' },
   ];
 
+  // Build featured module from the updated `modules` schema
+  const firstModule = analysis?.modules?.[0];
+  const secondModule = analysis?.modules?.[1];
+
   const featuredModule = {
-    title: 'Advanced React Patterns',
-    description: 'Master higher-order components, render props, and custom hooks to build scalable frontend architectures.',
+    title: firstModule?.title || 'Advanced React Patterns',
+    description: analysis?.summary || firstModule?.notes || 'Master higher-order components, render props, and custom hooks to build scalable frontend architectures.',
     status: 'In Progress',
     duration: '45 mins left',
     progress: 65,
-    modulesLeft: 3
+    modulesLeft: totalModules > 1 ? totalModules - 1 : 3,
+    link: firstModule?.youtube_link || '#' // if the UI wants to use it later
   };
 
   const secondaryModule = {
-    title: 'State Management with Redux Toolkit'
+    title: secondModule?.title || 'State Management with Redux Toolkit'
   };
 
-  const skillGaps = [
-    { name: 'React Hooks Deep Dive', status: 'Strong', progress: 90 },
-    { name: 'System Architecture', status: 'Partial', progress: 50 },
-    { name: 'GraphQL Integration', status: 'Missing', progress: 10 },
-    { name: 'Performance Optimization', status: 'Partial', progress: 40 },
-  ];
+  // Build skill gaps from skill_gap_report schema
+  const skillGaps = analysis 
+    ? skillEntries.map(([name, status]) => {
+        let progress = 50;
+        if (status === 'Strong') progress = 90;
+        else if (status === 'Moderate') progress = 50;
+        else if (status === 'Missing') progress = 10;
+        return { name, status, progress };
+      })
+    : [
+        { name: 'React Hooks Deep Dive', status: 'Strong', progress: 90 },
+        { name: 'System Architecture', status: 'Partial', progress: 50 },
+        { name: 'GraphQL Integration', status: 'Missing', progress: 10 },
+        { name: 'Performance Optimization', status: 'Partial', progress: 40 },
+      ];
 
-  const handleCreateTestEmployee = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return alert("Not logged in");
-    
-    // Check if user is HR before invoking link
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
-    if (profile?.role !== 'hr') return alert("Only HR can create employees.");
-
-    try {
-      const res = await fetch('http://localhost:5001/api/hr/create-employee', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: `employee_${Math.floor(Math.random()*1000)}@company.com`,
-          password: 'Password123!',
-          hrId: session.user.id
-        })
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert("Success! Employee created.\\nEmail: " + data.user.email + "\\nPassword: Password123!");
-      } else {
-        alert("Error: " + data.error);
-      }
-    } catch (err) {
-      alert("Network error: " + err.message + "\\nIs the Node server running on port 5001?");
-    }
+  const handleLogout = () => {
+    mockAuth.logout();
+    navigate('/login');
   };
 
   return (
@@ -73,16 +77,16 @@ export default function EmployeeDashboardPage() {
         
         <div className="flex-1 p-6 md:p-10 z-10 relative">
           
-          {/* Hidden HR Trigger to create employee */}
+          {/* Logout button */}
           <button 
-            onClick={handleCreateTestEmployee} 
-            className="absolute top-2 right-6 text-[11px] font-mono text-ink-muted/50 hover:text-primary-500 transition-colors z-50 mix-blend-multiply"
+            onClick={handleLogout} 
+            className="absolute top-2 right-6 text-[11px] font-mono text-ink-muted/50 hover:text-red-500 transition-colors z-50"
           >
-            [Dev: Create Employee]
+            [Logout]
           </button>
 
           <div className="max-w-6xl mx-auto space-y-8">
-            <DashboardHeader userName="Alex" day={14} />
+            <DashboardHeader userName={user?.email?.split('@')[0] || 'Alex'} day={14} />
             
             {/* Metrics Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>

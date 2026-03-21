@@ -1,7 +1,7 @@
 import { ArrowLeft, Brain, AlertCircle } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
-import { supabase } from '../supabaseClient'
+import { mockAuth } from '../mockAuth'
 
 export default function SignupPage() {
   const navigate = useNavigate()
@@ -15,34 +15,13 @@ export default function SignupPage() {
     setErrorMsg('');
     setLoading(true);
 
-    try {
-      // 1. SignUp
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-      });
+    // Simulate brief delay
+    await new Promise(r => setTimeout(r, 500));
 
-      if (authError) throw new Error(authError.message);
-
-      if (authData.user) {
-        // 2. Insert HR role into profiles
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([{ id: authData.user.id, email: email, role: 'hr' }]);
-
-        if (profileError) {
-          throw new Error('Verification sent, but profile creation failed: ' + profileError.message);
-        } else {
-          // Typically auth state listener in App.jsx catches this, but if email confirm is required
-          // we should alert the user to check email.
-          // Assuming email confirms are OFF for easy onboarding flow for now:
-        }
-      }
-    } catch (err) {
-      setErrorMsg(err.message);
-    } finally {
-      setLoading(false);
-    }
+    mockAuth.signup(email, 'hr');
+    navigate('/hr-dashboard');
+    
+    setLoading(false);
   };
 
   return (

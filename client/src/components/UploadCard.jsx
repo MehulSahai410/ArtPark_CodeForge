@@ -1,11 +1,17 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { UploadCloud, FileText, X } from 'lucide-react';
 
-export default function UploadCard({ title, dropText, writeText }) {
+export default function UploadCard({ title, dropText, writeText, onDataChange }) {
   const [file, setFile] = useState(null);
   const [text, setText] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    if (onDataChange) {
+      onDataChange({ file, text });
+    }
+  }, [file, text, onDataChange]);
 
   const handleDragOver = (e) => {
     e.preventDefault();
