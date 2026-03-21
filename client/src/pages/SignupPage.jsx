@@ -1,8 +1,49 @@
-import { ArrowLeft, Brain } from 'lucide-react'
+import { ArrowLeft, Brain, AlertCircle } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { supabase } from '../supabaseClient'
 
 export default function SignupPage() {
   const navigate = useNavigate()
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSignup = async (e) => {
+    e.preventDefault();
+    setErrorMsg('');
+    setLoading(true);
+
+    try {
+      // 1. SignUp
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (authError) throw new Error(authError.message);
+
+      if (authData.user) {
+        // 2. Insert HR role into profiles
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([{ id: authData.user.id, email: email, role: 'hr' }]);
+
+        if (profileError) {
+          throw new Error('Verification sent, but assigning HR role failed. Contact support.');
+        } else {
+          // Typically auth state listener in App.jsx catches this, but if email confirm is required
+          // we should alert the user to check email.
+          // Assuming email confirms are OFF for easy onboarding flow for now:
+        }
+      }
+    } catch (err) {
+      setErrorMsg(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen relative flex items-center justify-center overflow-hidden bg-surface">
@@ -41,16 +82,22 @@ export default function SignupPage() {
             </p>
           </div>
 
-          <form className="space-y-5" onSubmit={(e) => {
-            e.preventDefault();
-            // Redirect to dashboard mock
-            navigate('/dashboard');
-          }}>
+          <form className="space-y-5" onSubmit={handleSignup}>
+            
+            {errorMsg && (
+              <div className="flex items-center gap-2 text-red-600 bg-red-50 px-4 py-3 rounded-xl text-sm font-medium animate-fade-in">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                {errorMsg}
+              </div>
+            )}
+
             <div className="space-y-1">
               <label className="text-sm font-medium text-ink/80 ml-1 block" htmlFor="email">Email Address</label>
               <input
                 id="email"
                 type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-3 rounded-2xl border border-gray-200 bg-white/80 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-200 placeholder:text-gray-400"
                 placeholder="name@company.com"
                 required
@@ -62,6 +109,8 @@ export default function SignupPage() {
               <input
                 id="password"
                 type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-3 rounded-2xl border border-gray-200 bg-white/80 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-200 placeholder:text-gray-400"
                 placeholder="••••••••"
                 required
@@ -70,9 +119,10 @@ export default function SignupPage() {
 
             <button 
               type="submit" 
-              className="w-full btn-primary !py-3.5 !rounded-2xl mt-4 transition-all duration-300"
+              disabled={loading}
+              className={`w-full btn-primary !py-3.5 !rounded-2xl mt-4 transition-all duration-300 ${loading ? 'opacity-70 cursor-wait' : ''}`}
             >
-              Create Account
+              {loading ? 'Creating...' : 'Create Account'}
             </button>
             
             <div className="mt-6 text-center">

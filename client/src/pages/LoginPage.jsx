@@ -1,10 +1,58 @@
-import { ArrowLeft, Brain, User, Briefcase } from 'lucide-react'
+import { ArrowLeft, Brain, User, Briefcase, AlertCircle } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
+import { supabase } from '../supabaseClient'
 
 export default function LoginPage() {
   const [selectedRole, setSelectedRole] = useState(null)
   const navigate = useNavigate()
+  
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [errorMsg, setErrorMsg] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    if (!selectedRole) {
+      setErrorMsg("Please select a role to continue");
+      return;
+    }
+    
+    setErrorMsg('');
+    setLoading(true);
+
+    try {
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (authError) throw new Error(authError.message);
+
+      // Verify Role
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', authData.user.id)
+        .single();
+
+      if (profileError) throw new Error("Could not fetch user profile to verify role.");
+
+      if (profile.role !== selectedRole) {
+        await supabase.auth.signOut();
+        throw new Error(`Access denied. You are registered as an ${profile.role}, not an ${selectedRole}.`);
+      }
+
+      // App.jsx routing will automatically pick up the session change and redirect.
+      // (No explicit navigate here needed since App.jsx's onAuthStateChange handles it)
+      
+    } catch (err) {
+      setErrorMsg(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen relative flex items-center justify-center overflow-hidden bg-surface">
@@ -43,19 +91,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <form className="space-y-5" onSubmit={(e) => {
-            e.preventDefault();
-            if (!selectedRole) {
-              alert("Please select a role to continue");
-              return;
-            }
-            
-            if (selectedRole === 'employee') {
-              navigate('/upload');
-            } else if (selectedRole === 'hr') {
-              navigate('/dashboard');
-            }
-          }}>
+          <form className="space-y-5" onSubmit={handleLogin}>
             
             {/* Role Selection */}
             <div className="space-y-3 mb-6 animate-fade-in">
@@ -63,7 +99,7 @@ export default function LoginPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
                   type="button"
-                  onClick={() => setSelectedRole('employee')}
+                  onClick={() => { setSelectedRole('employee'); setErrorMsg(''); }}
                   className={`relative flex items-center justify-center gap-2.5 p-4 rounded-xl border transition-all duration-300 ease-in-out ${
                     selectedRole === 'employee'
                       ? 'bg-white border-primary-500 shadow-[0_4px_16px_rgba(99,102,241,0.15)] scale-[1.03] ring-1 ring-primary-500/50'
@@ -76,7 +112,7 @@ export default function LoginPage() {
 
                 <button
                   type="button"
-                  onClick={() => setSelectedRole('hr')}
+                  onClick={() => { setSelectedRole('hr'); setErrorMsg(''); }}
                   className={`relative flex items-center justify-center gap-2.5 p-4 rounded-xl border transition-all duration-300 ease-in-out ${
                     selectedRole === 'hr'
                       ? 'bg-white border-primary-500 shadow-[0_4px_16px_rgba(99,102,241,0.15)] scale-[1.03] ring-1 ring-primary-500/50'
@@ -89,11 +125,20 @@ export default function LoginPage() {
               </div>
             </div>
 
+            {errorMsg && (
+              <div className="flex items-center gap-2 text-red-600 bg-red-50 px-4 py-3 rounded-xl text-sm font-medium animate-fade-in">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                {errorMsg}
+              </div>
+            )}
+
             <div className="space-y-1">
               <label className="text-sm font-medium text-ink/80 ml-1 block" htmlFor="email">Email Address</label>
               <input
                 id="email"
                 type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-3 rounded-2xl border border-gray-200 bg-white/80 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-200 placeholder:text-gray-400"
                 placeholder="name@company.com"
                 required
@@ -108,6 +153,8 @@ export default function LoginPage() {
               <input
                 id="password"
                 type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-3 rounded-2xl border border-gray-200 bg-white/80 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-200 placeholder:text-gray-400"
                 placeholder="••••••••"
                 required
@@ -121,9 +168,10 @@ export default function LoginPage() {
 
             <button 
               type="submit" 
-              className={`w-full btn-primary !py-3.5 !rounded-2xl mt-4 transition-all duration-300 ${!selectedRole ? 'opacity-80 hover:-translate-y-0 hover:shadow-none cursor-not-allowed' : ''}`}
+              disabled={loading}
+              className={`w-full btn-primary !py-3.5 !rounded-2xl mt-4 transition-all duration-300 ${(!selectedRole || loading) ? 'opacity-80 hover:-translate-y-0 hover:shadow-none cursor-not-allowed' : ''}`}
             >
-              Log In
+              {loading ? 'Authenticating...' : 'Log In'}
             </button>
 
             {/* Conditional Signup Link for HR */}

@@ -9,12 +9,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.99.3",
+    "lucide-react": "^0.441.0",
     "react": "^18.3.1",
+    "react-countup": "^6.5.3",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.0",
-    "react-countup": "^6.5.3",
-    "swiper": "^11.1.9",
-    "lucide-react": "^0.441.0"
+    "swiper": "^11.1.9"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",

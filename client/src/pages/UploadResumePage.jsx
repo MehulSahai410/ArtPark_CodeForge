@@ -1,8 +1,9 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import UploadCard from '../components/UploadCard';
 
 export default function UploadResumePage() {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen relative flex flex-col items-center justify-center overflow-x-hidden bg-surface py-20 px-6">
       {/* Background blobs to match the landing page theme */}
@@ -44,7 +45,10 @@ export default function UploadResumePage() {
 
         {/* Action Button */}
         <div className="mt-10 flex justify-center animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-          <button className="btn-primary !px-12 !py-4 !text-base !rounded-2xl w-full md:w-auto min-w-[200px]">
+          <button 
+            onClick={() => navigate('/dashboard')}
+            className="btn-primary !px-12 !py-4 !text-base !rounded-2xl w-full md:w-auto min-w-[200px]"
+          >
             Analyze Documents
           </button>
         </div>
