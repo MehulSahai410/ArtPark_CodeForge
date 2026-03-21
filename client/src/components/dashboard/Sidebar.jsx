@@ -9,7 +9,7 @@ export default function Sidebar() {
     {
       title: 'Overview',
       items: [
-        { label: 'Home', path: '/dashboard', icon: Home },
+        { label: 'Home', path: '/employee-dashboard', icon: Home },
       ]
     },
     {
