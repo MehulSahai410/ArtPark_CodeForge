@@ -33,10 +33,57 @@ export const mockAuth = {
   }
 };
 
-// Mock PDF Extractor
-const extractMockResumeText = async (file) => {
-  await new Promise(r => setTimeout(r, 500));
-  return "Experienced Full-Stack Developer with 5 years in Java, Spring Boot, React, and SQL. Built multiple REST APIs and frontend dashboards. No experience with distributed systems or Kubernetes.";
+// Real PDF Text Extractor using pdf.js
+const extractTextFromPDF = async (file) => {
+  try {
+    const pdfjsLib = await import('pdfjs-dist');
+    
+    // Set the worker source
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    
+    let fullText = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map(item => item.str).join(' ');
+      fullText += pageText + '\n';
+    }
+    
+    console.log('✅ PDF text extracted, length:', fullText.trim().length, 'characters');
+    return fullText.trim();
+  } catch (err) {
+    console.error('PDF extraction failed:', err);
+    // Fallback: try reading as plain text
+    try {
+      const text = await file.text();
+      if (text && text.length > 20) return text;
+    } catch (e) { /* ignore */ }
+    return '';
+  }
+};
+
+// Extract text from any file type
+const extractTextFromFile = async (file) => {
+  if (!file) return '';
+  
+  const name = file.name.toLowerCase();
+  
+  if (name.endsWith('.pdf')) {
+    return await extractTextFromPDF(file);
+  } else if (name.endsWith('.txt') || name.endsWith('.docx') || name.endsWith('.doc')) {
+    // For .txt files, read as text directly
+    return await file.text();
+  }
+  
+  // Attempt generic text read
+  try {
+    return await file.text();
+  } catch {
+    return '';
+  }
 };
 
 // Generic API call to Gemini
@@ -50,11 +97,26 @@ export const analyzeProfileWithGemini = async (resumeData, jdData) => {
       return getDummyResponse();
     }
 
-    const resumeText = resumeData.text || (resumeData.file ? await extractMockResumeText(resumeData.file) : '');
-    const jdText = jdData.text || 'Senior Software Engineer requiring Java, Spring, React, System Design, and Kubernetes.';
+    // Extract text from files if provided, otherwise use typed text
+    let resumeText = resumeData.text || '';
+    if (!resumeText && resumeData.file) {
+      resumeText = await extractTextFromFile(resumeData.file);
+    }
 
-    if (!resumeText) throw new Error("Resume content is missing.");
-    if (!jdText) throw new Error("Job Description content is missing.");
+    let jdText = jdData.text || '';
+    if (!jdText && jdData.file) {
+      jdText = await extractTextFromFile(jdData.file);
+    }
+
+    // Final fallback for JD
+    if (!jdText) {
+      jdText = 'Senior Software Engineer requiring Java, Spring, React, System Design, and Kubernetes.';
+    }
+
+    if (!resumeText) throw new Error("Resume content is missing. Could not extract text from the file.");
+
+    console.log('📄 Resume text (first 200 chars):', resumeText.substring(0, 200));
+    console.log('📋 JD text (first 200 chars):', jdText.substring(0, 200));
 
     const prompt = `
 You are an AI career coach.
@@ -102,7 +164,7 @@ Return the response STRICTLY as a valid JSON object with EXACTLY the following f
   "summary": "Candidate is strong in backend but lacks scalability knowledge."
 }`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -110,15 +172,24 @@ Return the response STRICTLY as a valid JSON object with EXACTLY the following f
       })
     });
 
-    if (!response.ok) throw new Error(`API error: ${response.status}`);
+    if (!response.ok) {
+      const errBody = await response.text();
+      console.error('Gemini API HTTP Error:', response.status, errBody);
+      throw new Error(`API error: ${response.status}`);
+    }
     
     const data = await response.json();
     let textOut = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!textOut) throw new Error("Invalid API response format");
 
-    // Clean markdown code blocks from the JSON
-    textOut = textOut.replace(/^```json/m, '').replace(/^```/m, '').trim();
-    return JSON.parse(textOut);
+    // Clean markdown code blocks from the JSON (handle ```json, ```, etc.)
+    textOut = textOut.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+    
+    console.log('🤖 Gemini response (first 300 chars):', textOut.substring(0, 300));
+    
+    const parsed = JSON.parse(textOut);
+    console.log('✅ Successfully parsed Gemini response');
+    return parsed;
 
   } catch (err) {
     console.error("Gemini API Error:", err);
