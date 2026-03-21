@@ -169,3 +169,89 @@ export const getAnalysis = () => {
   const raw = localStorage.getItem('analysis');
   return raw ? JSON.parse(raw) : null;
 };
+
+export const updateSkillStatus = (topic, score) => {
+  const analysis = getAnalysis();
+  if (!analysis) return;
+
+  // Map module topics to skills (simple matching for demo)
+  const skillToUpdate = Object.keys(analysis.skill_gap_report).find(skill => 
+    topic.toLowerCase().includes(skill.toLowerCase()) || 
+    skill.toLowerCase().includes(topic.toLowerCase())
+  ) || topic;
+
+  let newStatus = analysis.skill_gap_report[skillToUpdate] || 'Missing';
+  
+  if (score >= 80) newStatus = 'Strong';
+  else if (score >= 50) newStatus = 'Moderate';
+  else newStatus = 'Missing';
+
+  analysis.skill_gap_report[skillToUpdate] = newStatus;
+
+  // Update matched/missing arrays
+  if (newStatus !== 'Missing') {
+    if (!analysis.matched_skills.includes(skillToUpdate)) {
+      analysis.matched_skills.push(skillToUpdate);
+    }
+    analysis.missing_skills = analysis.missing_skills.filter(s => s !== skillToUpdate);
+  } else {
+    if (!analysis.missing_skills.includes(skillToUpdate)) {
+      analysis.missing_skills.push(skillToUpdate);
+    }
+    analysis.matched_skills = analysis.matched_skills.filter(s => s !== skillToUpdate);
+  }
+
+  storeAnalysis(analysis);
+  return analysis;
+};
+
+// ========== Employee Management (HR Feature) ==========
+
+const EMPLOYEES_KEY = 'adaptlearn_employees';
+
+export const getEmployees = () => {
+  const raw = localStorage.getItem(EMPLOYEES_KEY);
+  return raw ? JSON.parse(raw) : [];
+};
+
+const saveEmployees = (employees) => {
+  localStorage.setItem(EMPLOYEES_KEY, JSON.stringify(employees));
+};
+
+export const generatePassword = () => {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$';
+  let pass = '';
+  for (let i = 0; i < 10; i++) {
+    pass += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return pass;
+};
+
+export const addEmployee = (name, email) => {
+  const employees = getEmployees();
+  const password = generatePassword();
+  const newEmployee = {
+    id: crypto.randomUUID ? crypto.randomUUID() : `emp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    name,
+    email,
+    password,
+    role: 'employee',
+    status: 'active',
+    createdAt: new Date().toISOString(),
+  };
+  employees.push(newEmployee);
+  saveEmployees(employees);
+  return newEmployee;
+};
+
+export const removeEmployee = (id, hardDelete = false) => {
+  let employees = getEmployees();
+  if (hardDelete) {
+    employees = employees.filter(e => e.id !== id);
+  } else {
+    employees = employees.map(e => e.id === id ? { ...e, status: 'removed' } : e);
+  }
+  saveEmployees(employees);
+  return employees;
+};
+

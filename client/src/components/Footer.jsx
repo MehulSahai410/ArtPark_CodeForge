@@ -6,25 +6,25 @@ const footerLinks = {
     { label: 'Features', href: '#features' },
     { label: 'How It Works', href: '#how-it-works' },
     { label: 'Pricing', href: '#pricing' },
-    { label: 'Enterprise', href: '#' },
+    { label: 'Enterprise', href: '/enterprise' },
   ],
   Resources: [
-    { label: 'Documentation', href: '#' },
-    { label: 'API Reference', href: '#' },
-    { label: 'Blog', href: '#' },
-    { label: 'Case Studies', href: '#' },
+    { label: 'Documentation', href: '/documentation' },
+    { label: 'API Reference', href: '/api-reference' },
+    { label: 'Blog', href: '/blog' },
+    { label: 'Case Studies', href: '/case-studies' },
   ],
   Company: [
-    { label: 'About Us', href: '#' },
-    { label: 'Careers', href: '#' },
-    { label: 'Contact', href: '#' },
-    { label: 'Partners', href: '#' },
+    { label: 'About Us', href: '/about' },
+    { label: 'Careers', href: '/careers' },
+    { label: 'Contact', href: '/contact' },
+    { label: 'Partners', href: '/partners' },
   ],
   Legal: [
-    { label: 'Privacy Policy', href: '#' },
-    { label: 'Terms of Service', href: '#' },
-    { label: 'Cookie Policy', href: '#' },
-    { label: 'Security', href: '#' },
+    { label: 'Privacy Policy', href: '/privacy' },
+    { label: 'Terms of Service', href: '/terms' },
+    { label: 'Cookie Policy', href: '/cookies' },
+    { label: 'Security', href: '/security' },
   ],
 }
 
@@ -99,12 +99,21 @@ export default function Footer() {
               <ul className="space-y-3">
                 {links.map((link) => (
                   <li key={link.label}>
-                    <a
-                      href={link.href}
-                      className="text-sm text-ink-secondary hover:text-ink transition-colors duration-200"
-                    >
-                      {link.label}
-                    </a>
+                    {link.href.startsWith('#') ? (
+                      <a
+                        href={link.href}
+                        className="text-sm text-ink-secondary hover:text-ink transition-colors duration-200"
+                      >
+                        {link.label}
+                      </a>
+                    ) : (
+                      <Link
+                        to={link.href}
+                        className="text-sm text-ink-secondary hover:text-ink transition-colors duration-200"
+                      >
+                        {link.label}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>

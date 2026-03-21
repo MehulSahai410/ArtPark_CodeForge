@@ -1,10 +1,13 @@
 import Sidebar from '../components/dashboard/Sidebar';
-import { getAnalysis } from '../mockAuth';
-import { CheckCircle2, Clock, Lock, ChevronRight } from 'lucide-react';
+import { getAnalysis, updateSkillStatus } from '../mockAuth';
+import { CheckCircle2, Clock, Lock, ChevronRight, GraduationCap } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import QuizModal from '../components/dashboard/QuizModal';
 
 export default function RoadmapPage() {
-  const analysis = getAnalysis();
+  const [analysis, setAnalysis] = useState(getAnalysis());
+  const [quizModule, setQuizModule] = useState(null);
 
   const roadmapItems = analysis?.roadmap
     ? analysis.roadmap.flatMap((phase, phaseIdx) =>
@@ -31,6 +34,13 @@ export default function RoadmapPage() {
     Completed: { icon: CheckCircle2, color: 'text-accent-green', bg: 'bg-accent-green-light', badge: 'bg-accent-green-light text-accent-green' },
     'In Progress': { icon: Clock, color: 'text-primary-600', bg: 'bg-primary-50', badge: 'bg-accent-orange-light text-accent-orange' },
     Locked: { icon: Lock, color: 'text-ink-muted', bg: 'bg-gray-100', badge: 'bg-gray-100 text-ink-muted' },
+  };
+
+  const handleQuizComplete = (score) => {
+    if (quizModule) {
+      const updated = updateSkillStatus(quizModule.title || quizModule.topic, score);
+      setAnalysis(updated);
+    }
   };
 
   const hasItems = roadmapItems && roadmapItems.length > 0;
@@ -102,18 +112,34 @@ export default function RoadmapPage() {
                             <span>{item.duration}</span>
                           </div>
                           {item.status !== 'Locked' && (
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3 mb-4">
                               <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                                 <div className="h-full bg-primary-500 rounded-full transition-all duration-700" style={{ width: `${item.progress}%` }} />
                               </div>
                               <span className="text-xs font-semibold text-ink-muted">{item.progress}%</span>
                             </div>
                           )}
-                          {item.status === 'In Progress' && (
-                            <button className="mt-3 text-xs font-semibold text-primary-600 hover:text-primary-700 flex items-center gap-1 transition-colors">
-                              Continue <ChevronRight className="w-3.5 h-3.5" />
-                            </button>
-                          )}
+
+                          <div className="flex items-center gap-4">
+                            {item.status === 'In Progress' && (
+                              <a 
+                                href="https://youtu.be/lFeYU31TnQ8?si=9LYP8-tHijsDe32w"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs font-semibold text-primary-600 hover:text-primary-700 flex items-center gap-1 transition-colors"
+                              >
+                                Continue <ChevronRight className="w-3.5 h-3.5" />
+                              </a>
+                            )}
+                            {item.status !== 'Locked' && (
+                              <button 
+                                onClick={() => setQuizModule(item)}
+                                className="flex items-center gap-1.5 text-xs font-bold text-accent-green hover:text-accent-green/80 transition-colors"
+                              >
+                                <GraduationCap className="w-4 h-4" /> Take Quiz
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
@@ -138,6 +164,13 @@ export default function RoadmapPage() {
           </div>
         </div>
       </main>
+
+      <QuizModal 
+        isOpen={!!quizModule} 
+        onClose={() => setQuizModule(null)} 
+        topic={quizModule?.title}
+        onComplete={handleQuizComplete}
+      />
     </div>
   );
 }

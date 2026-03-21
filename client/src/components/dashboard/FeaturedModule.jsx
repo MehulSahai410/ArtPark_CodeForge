@@ -36,15 +36,25 @@ export default function FeaturedModule({ module, secondaryModule }) {
             </div>
           </div>
 
-          <button className="btn-primary flex items-center gap-2">
+          <a 
+            href="https://youtu.be/lFeYU31TnQ8?si=9LYP8-tHijsDe32w" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="btn-primary flex items-center gap-2 inline-flex"
+          >
             <PlayCircle className="w-5 h-5" />
             Continue Module
-          </button>
+          </a>
         </div>
       </div>
 
       {secondaryModule && (
-        <div className="glass-effect rounded-[20px] p-5 shadow-[0_8px_32px_rgba(0,0,0,0.02)] bg-white/40 border border-white/60 flex items-center justify-between hover:bg-white/60 hover:-translate-y-0.5 transition-all cursor-pointer group">
+        <a 
+          href="https://youtu.be/X48VuDVv0do?si=IPFQ48uUjFiNPTze" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="glass-effect rounded-[20px] p-5 shadow-[0_8px_32px_rgba(0,0,0,0.02)] bg-white/40 border border-white/60 flex items-center justify-between hover:bg-white/60 hover:-translate-y-0.5 transition-all cursor-pointer group no-underline"
+        >
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-ink-muted mb-1 block">Up Next</span>
             <h4 className="font-medium text-ink text-sm group-hover:text-primary-600 transition-colors">{secondaryModule.title}</h4>
@@ -52,7 +62,7 @@ export default function FeaturedModule({ module, secondaryModule }) {
           <div className="w-10 h-10 rounded-full bg-white/80 flex items-center justify-center shadow-sm border border-white">
             <PlayCircle className="w-5 h-5 text-ink-muted group-hover:text-primary-500 transition-colors" />
           </div>
-        </div>
+        </a>
       )}
     </div>
   );

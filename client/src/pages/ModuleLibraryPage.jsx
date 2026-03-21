@@ -1,7 +1,8 @@
 import Sidebar from '../components/dashboard/Sidebar';
-import { getAnalysis } from '../mockAuth';
-import { Search, Clock, Star, ChevronRight, BookOpen } from 'lucide-react';
+import { getAnalysis, updateSkillStatus } from '../mockAuth';
+import { Search, Clock, Star, BookOpen, GraduationCap } from 'lucide-react';
 import { useState } from 'react';
+import QuizModal from '../components/dashboard/QuizModal';
 
 const DEFAULT_MODULES = [
   { title: 'Data Structures in Java', description: 'Arrays, LinkedLists, Trees, HashMaps with real-world use cases.', tags: ['Java', 'DSA'], duration: '4 hrs', difficulty: 'Intermediate', rating: 4.8, enrolled: true },
@@ -23,9 +24,10 @@ const difficultyColor = {
 };
 
 export default function ModuleLibraryPage() {
-  const analysis = getAnalysis();
+  const [analysis, setAnalysis] = useState(getAnalysis());
   const [search, setSearch] = useState('');
   const [filterDifficulty, setFilterDifficulty] = useState('All');
+  const [quizModule, setQuizModule] = useState(null);
 
   // Merge AI modules with defaults
   const aiModules = (analysis?.modules || []).map(m => ({
@@ -35,7 +37,7 @@ export default function ModuleLibraryPage() {
     duration: '3 hrs',
     difficulty: 'Intermediate',
     rating: 4.7,
-    enrolled: false,
+    enrolled: true,
     youtube_link: m.youtube_link,
     resources: m.resources,
   }));
@@ -49,6 +51,13 @@ export default function ModuleLibraryPage() {
     const matchDiff = filterDifficulty === 'All' || m.difficulty === filterDifficulty;
     return matchSearch && matchDiff;
   });
+
+  const handleQuizComplete = (score) => {
+    if (quizModule) {
+      const updated = updateSkillStatus(quizModule.title, score);
+      setAnalysis(updated);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-surface flex">
@@ -95,7 +104,7 @@ export default function ModuleLibraryPage() {
               {filtered.map((mod, idx) => (
                 <div
                   key={idx}
-                  className="glass-effect rounded-xl p-6 bg-white/50 border border-white/60 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col animate-fade-in-up"
+                  className="glass-effect rounded-xl p-6 bg-white/50 border border-white/60 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col animate-fade-in-up group"
                   style={{ animationDelay: `${0.05 + idx * 0.05}s` }}
                 >
                   <div className="flex items-start justify-between mb-3">
@@ -108,22 +117,42 @@ export default function ModuleLibraryPage() {
                   </div>
                   <h3 className="font-semibold text-ink text-base mb-1.5">{mod.title}</h3>
                   <p className="text-ink-muted text-xs leading-relaxed mb-3 flex-1">{mod.description}</p>
-                  <div className="flex flex-wrap gap-1.5 mb-3">
-                    {mod.tags.map((t, i) => (
-                      <span key={i} className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-primary-50 text-primary-700">{t}</span>
+                  
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {mod.tags?.map((t, i) => (
+                      <span key={i} className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-white border border-gray-100 text-ink-muted transition-colors group-hover:border-primary-200 group-hover:text-primary-600">{t}</span>
                     ))}
                   </div>
-                  <div className="flex items-center justify-between text-xs text-ink-muted mb-4">
-                    <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {mod.duration}</span>
-                    <span className="flex items-center gap-1"><Star className="w-3.5 h-3.5 text-yellow-500" /> {mod.rating}</span>
+
+                  <div className="flex items-center justify-between text-xs text-ink-muted mb-5">
+                    <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> {mod.duration}</span>
+                    <span className="flex items-center gap-1.5 text-yellow-500 font-medium"><Star className="w-3.5 h-3.5 fill-yellow-500" /> {mod.rating}</span>
                   </div>
-                  <button className={`w-full py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
-                    mod.enrolled
-                      ? 'bg-primary-50 text-primary-700 hover:bg-primary-100'
-                      : 'btn-primary !text-xs !py-2.5 !rounded-xl'
-                  }`}>
-                    {mod.enrolled ? 'Continue' : 'Enroll'}
-                  </button>
+
+                  <div className="grid grid-cols-2 gap-3 mt-auto">
+                    {mod.enrolled ? (
+                      <a 
+                        href="https://youtu.be/lFeYU31TnQ8?si=9LYP8-tHijsDe32w"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="py-2.5 rounded-xl text-xs font-semibold bg-primary-50 text-primary-700 hover:bg-primary-100 flex items-center justify-center transition-all duration-200"
+                      >
+                        Continue
+                      </a>
+                    ) : (
+                      <button className="btn-primary !text-xs !py-2.5 !rounded-xl">
+                        Enroll
+                      </button>
+                    )}
+                    {mod.enrolled && (
+                      <button 
+                        onClick={() => setQuizModule(mod)}
+                        className="py-2.5 rounded-xl text-xs font-bold bg-accent-green-light text-accent-green hover:bg-accent-green hover:text-white transition-all duration-200 flex items-center justify-center gap-1.5"
+                      >
+                        <GraduationCap className="w-3.5 h-3.5" /> Give Quiz
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -131,6 +160,13 @@ export default function ModuleLibraryPage() {
           </div>
         </div>
       </main>
+
+      <QuizModal 
+        isOpen={!!quizModule} 
+        onClose={() => setQuizModule(null)} 
+        topic={quizModule?.title}
+        onComplete={handleQuizComplete}
+      />
     </div>
   );
 }
